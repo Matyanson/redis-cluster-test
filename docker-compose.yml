@@ -90,6 +90,15 @@ services:
     networks:
       redis-cluster:
         ipv4_address: 172.28.0.10
+  
+  redisinsight:
+    image: redis/redisinsight:latest
+    container_name: redisinsight
+    ports:
+      - "5540:5540"
+    networks:
+      redis-cluster:
+        ipv4_address: 172.28.0.11
 
   cluster-init:
     image: redis:7.2
