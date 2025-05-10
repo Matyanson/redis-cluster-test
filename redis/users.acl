@@ -1,1 +1,5 @@
-user default on >defaultpassword ~* +@all
+user admin on >adminpassword ~* +@all
+
+user reader on >readerpassword ~readonly:* +@read -@write
+
+user writer on >writerpassword ~data:* +@write -@read

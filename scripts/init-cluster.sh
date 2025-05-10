@@ -4,8 +4,8 @@
 set -e
 
 # admin credentials
-USER=default
-PASS=defaultpassword
+USER=admin
+PASS=adminpassword
 
 echo "Creating Redis Cluster..."
 
