@@ -105,6 +105,7 @@ services:
       - redis-node-9
     volumes:
       - ./scripts/init-cluster.sh:/init-cluster.sh
+      - ./redis/:/usr/local/etc/redis/
     entrypoint: ["/bin/sh", "-c", "sleep 5 && /init-cluster.sh"]
     networks:
       redis-cluster:
