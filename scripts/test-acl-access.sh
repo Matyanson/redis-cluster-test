@@ -6,9 +6,10 @@ DOCKER_CONTAINER="redis-node-1"
 REDIS_PORT="6379"
 
 USERS=(
-  "reader readerpassword readonly"
-  "writer writerpassword data"
-  "admin  adminpassword test"
+  "admin adminpassword test"
+  "ingestor ingestorpassword orders"
+  "catalog_reader catalogpass products"
+  "analyst analystpass analytics"
 )
 
 echo "=== Redis ACL Access Test ==="

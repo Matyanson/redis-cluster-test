@@ -11,15 +11,13 @@ CERT='//usr/local/etc/redis/tls/redis.crt'
 KEY='//usr/local/etc/redis/tls/redis.key'
 CA='//usr/local/etc/redis/tls/ca.crt'
 
-echo $CERT
 
 USERS=(
-  "reader readerpassword readonly"
-  "writer writerpassword data"
-  "admin  adminpassword test"
+  "admin adminpassword test"
+  "ingestor ingestorpassword orders"
+  "catalog_reader catalogpass products"
+  "analyst analystpass analytics"
 )
-
-echo "=== Redis ACL Access Test (TLS přes URI) ==="
 
 for entry in "${USERS[@]}"; do
   read -r USERNAME PASSWORD PREFIX <<< "$entry"

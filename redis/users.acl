@@ -1,5 +1,7 @@
 user admin on >adminpassword ~* +@all
 
-user reader on >readerpassword ~readonly:* +@read -@write
+user ingestor on >ingestorpassword +@write +@read ~orders:* ~order_products:* nopass
 
-user writer on >writerpassword ~data:* +@write -@read
+user catalog_reader on >catalogpass +@read -@write ~products:* ~departments:* ~aisles:* nopass
+
+user analyst on >analystpass +@read -@write -@admin allkeys
