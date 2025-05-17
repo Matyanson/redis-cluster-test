@@ -27,7 +27,11 @@ for path in paths_to_check:
 
 
 # Connect to Redis with TLS and ACL authentication
-startup_nodes = [ClusterNode('redis-node-1', 6379)]
+startup_nodes = [
+    ClusterNode('redis-node-1', 6379),
+    ClusterNode('redis-node-2', 6379),
+    ClusterNode('redis-node-3', 6379)
+]
 r = RedisCluster(
     startup_nodes=startup_nodes,
     host="localhost", port=6379,
@@ -52,28 +56,31 @@ except Exception as e:
 
 
 
-# # Function to import a CSV into Redis hashes
-# def import_csv_to_hash(csv_path, prefix, mapping_cols):
-#     df = pd.read_csv(csv_path)
-#     if df.empty:
-#         print(f"⚠️  Soubor {csv_path} je prázdný.")
-#         return
-#     for _, row in df.iterrows():
-#         key = f"{prefix}:{row[mapping_cols[0]]}"
-#         # build mapping dict
-#         mapping = {col: row[col] for col in mapping_cols[1:]}
-#         r.hset(key, mapping=mapping)
-#     print(f"✅ Načteno {len(df)} záznamů z {csv_path} do Redis jako {prefix}:*")
+# Function to import a CSV into Redis hashes
+def import_csv_to_hash(csv_path, prefix, mapping_cols):
+    df = pd.read_csv(csv_path)
+    if df.empty:
+        print(f"⚠️  Soubor {csv_path} je prázdný.")
+        return
+    for _, row in df.iterrows():
+        key = f"{prefix}:{row[mapping_cols[0]]}"
+        # build mapping dict
+        mapping = {col: row[col] for col in mapping_cols[1:]}
+        r.hset(key, mapping=mapping)
+    print(f"✅ Načteno {len(df)} záznamů z {csv_path} do Redis jako {prefix}:*")
 
-# # Import konfigurace
-# imports = [
-#     ('./data/products.csv', 'products', ['product_id', 'product_name', 'aisle_id', 'department_id']),
-#     ('./data/aisles.csv', 'aisles', ['aisle_id', 'aisle']),
-#     ('./data/departments.csv', 'departments', ['department_id', 'department'])
-# ]
+# Import konfigurace
+imports = [
+    ('./data/products.csv', 'products', ['product_id', 'product_name', 'aisle_id', 'department_id']),
+    ('./data/aisles.csv', 'aisles', ['aisle_id', 'aisle']),
+    ('./data/departments.csv', 'departments', ['department_id', 'department']),
+    ('./data/orders.csv', 'orders', ['order_id', 'user_id', 'eval_set', 'order_number', 'order_dow', 'order_hour_of_day', 'days_since_prior_order']),
+    ('./data/order_products__prior.csv', 'order_products_prior', ['order_id', 'product_id', 'add_to_cart_order', 'reordered']),
+    ('./data/order_products__train.csv', 'order_products_train', ['order_id', 'product_id', 'add_to_cart_order', 'reordered'])
+]
 
-# # Spuštění importu
-# if __name__ == '__main__':
-#     for csv_path, prefix, cols in imports:
-#         import_csv_to_hash(csv_path, prefix, cols)
-#     print("🎉 Import dat dokončen.")
+# Spuštění importu
+if __name__ == '__main__':
+    for csv_path, prefix, cols in imports:
+        import_csv_to_hash(csv_path, prefix, cols)
+    print("🎉 Import dat dokončen.")
