@@ -1,0 +1,15 @@
+FROM python:3.12-slim
+
+# Instalace potřebných knihoven
+RUN pip install redis==5.0.3 pandas
+
+# Pracovní adresář
+WORKDIR /app
+
+# Zkopíruj skripty a data
+COPY ./scripts/import_data.py .
+COPY ./redis/tls ./redis/tls
+COPY ./data ./data
+
+# Spuštění skriptu
+CMD ["python", "import_data.py"]
