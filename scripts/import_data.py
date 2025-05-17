@@ -65,7 +65,7 @@ def import_csv_to_hash(csv_path, prefix, mapping_cols):
     for _, row in df.iterrows():
         key = f"{prefix}:{row[mapping_cols[0]]}"
         # build mapping dict
-        mapping = {col: row[col] for col in mapping_cols[1:]}
+        mapping = {col: str(row[col]) for col in mapping_cols[1:]}
         r.hset(key, mapping=mapping)
     print(f"✅ Načteno {len(df)} záznamů z {csv_path} do Redis jako {prefix}:*")
 
