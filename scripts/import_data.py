@@ -2,6 +2,7 @@ import pandas as pd
 import redis
 import os
 
+from redis.exceptions import ClusterDownError
 from redis.cluster import RedisCluster
 from redis.cluster import ClusterNode
 
@@ -53,6 +54,21 @@ except Exception as e:
     raise
 
 
+# Funkce: zkusíme přečíst sentinel klíč, ale pokud je cluster ještě "down", zachytíme chybu
+def data_imported():
+    try:
+        val = r.get('import:complete')
+        print(val)
+        return val
+    except ClusterDownError:
+        # Cluster ještě není hotový → vracíme False, abychom šli importovat
+        print("⚠️ ClusterDownError při kontrole sentinel klíče, počkám a zkusím import.")
+        return False
+
+# Pokud už byl import dokončen, ukončíme se
+if data_imported():
+    print("✅ Data již byla importována. Skript končí.")
+    exit(0)
 
 
 
@@ -83,4 +99,6 @@ imports = [
 if __name__ == '__main__':
     for csv_path, prefix, cols in imports:
         import_csv_to_hash(csv_path, prefix, cols)
+    # Set sentinel key to mark import as complete
+    r.set('import:complete', '1')
     print("🎉 Import dat dokončen.")

@@ -1,8 +1,5 @@
 #!/bin/sh
 
-# exit on error
-set -e
-
 # admin credentials
 USER=admin
 PASS=adminpassword
@@ -12,6 +9,40 @@ CERT=/usr/local/etc/redis/tls/redis.crt
 KEY=/usr/local/etc/redis/tls/redis.key
 CA=/usr/local/etc/redis/tls/ca.crt
 
+# master node to check the state
+CHECK_HOST=redis-node-1
+CHECK_PORT=6379
+
+# don NOT exit on error
+set +e
+echo "🔍 Kontroluji, zda cluster už neexistuje..."
+
+# Zkusíme zavolat CLUSTER INFO; pokud v odpovědi najdeme "cluster_state:ok", víme, že cluster běží.
+CLUSTER_INFO=$(redis-cli \
+  --tls \
+  --cert "$CERT" \
+  --key "$KEY" \
+  --cacert "$CA" \
+  --user "$USER" \
+  -a "$PASS" \
+  -h "$CHECK_HOST" \
+  -p "$CHECK_PORT" \
+  CLUSTER INFO 2>/dev/null)
+
+# Zkusíme najít v odpovědi řádek cluster_state:ok
+CLUSTER_SLOTS_ASSIGNED=$(echo "$CLUSTER_INFO" | grep "^cluster_slots_assigned:" | cut -d: -f2)
+
+if [ -n "$CLUSTER_SLOTS_ASSIGNED" ] && [ "$CLUSTER_SLOTS_ASSIGNED" -gt 0 ]; then
+  echo "✅ Sloty jsou přiděleny (cluster_slots_assigned=$CLUSTER_SLOTS_ASSIGNED). Cluster je tedy hotový. Přeskakuji vytváření."
+  exit 0
+fi
+
+echo "⚙️  Cluster neexistuje, pokračuji v jeho vytváření..."
+echo "$CLUSTER_INFO"
+
+
+# exit on error
+set -e
 echo "Creating Redis Cluster over TLS..."
 
 yes yes | redis-cli \

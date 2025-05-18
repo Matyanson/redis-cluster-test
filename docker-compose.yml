@@ -8,6 +8,7 @@ services:
     command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
     volumes:
       - ./redis/:/usr/local/etc/redis/
+      - ./redis-data/redis-node-1:/data
     networks:
       redis-cluster:
         ipv4_address: 172.28.0.2
@@ -18,6 +19,7 @@ services:
     command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
     volumes:
       - ./redis/:/usr/local/etc/redis/
+      - ./redis-data/redis-node-2:/data
     networks:
       redis-cluster:
         ipv4_address: 172.28.0.3
@@ -28,6 +30,7 @@ services:
     command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
     volumes:
       - ./redis/:/usr/local/etc/redis/
+      - ./redis-data/redis-node-3:/data
     networks:
       redis-cluster:
         ipv4_address: 172.28.0.4
@@ -38,6 +41,7 @@ services:
     command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
     volumes:
       - ./redis/:/usr/local/etc/redis/
+      - ./redis-data/redis-node-4:/data
     networks:
       redis-cluster:
         ipv4_address: 172.28.0.5
@@ -48,6 +52,7 @@ services:
     command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
     volumes:
       - ./redis/:/usr/local/etc/redis/
+      - ./redis-data/redis-node-5:/data
     networks:
       redis-cluster:
         ipv4_address: 172.28.0.6
@@ -58,6 +63,7 @@ services:
     command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
     volumes:
       - ./redis/:/usr/local/etc/redis/
+      - ./redis-data/redis-node-6:/data
     networks:
       redis-cluster:
         ipv4_address: 172.28.0.7
@@ -68,6 +74,7 @@ services:
     command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
     volumes:
       - ./redis/:/usr/local/etc/redis/
+      - ./redis-data/redis-node-7:/data
     networks:
       redis-cluster:
         ipv4_address: 172.28.0.8
@@ -78,6 +85,7 @@ services:
     command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
     volumes:
       - ./redis/:/usr/local/etc/redis/
+      - ./redis-data/redis-node-8:/data
     networks:
       redis-cluster:
         ipv4_address: 172.28.0.9
@@ -88,6 +96,7 @@ services:
     command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
     volumes:
       - ./redis/:/usr/local/etc/redis/
+      - ./redis-data/redis-node-9:/data
     networks:
       redis-cluster:
         ipv4_address: 172.28.0.10
