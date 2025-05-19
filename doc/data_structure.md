@@ -100,12 +100,20 @@ Popis: Obsahuje produkty z objednávek určených pro trénování modelu.
 
 
 # Redis db
-## Produts
-    HSET produt:<product_id> {
+
+## Products
+    HSET product:{<product_id>}:info {
         product_name,
         aisle_id,
         department_id
     }
+    # Statistiky (počet prodejů a počty opakovaných objednávek) – ve stejném hashtagu {product_id}
+    HSET product:{<product_id>}:stats {
+        total_count,
+        reordered_count
+    }
+    # Populárnost produktu (celkové prodeje, používáme ZINCRBY)
+    ZINCRBY product:{<product_id>}:popularity 1 <product_id>
 
 ## Aisles
     HSET aisle:<aisle_id> {
@@ -118,31 +126,33 @@ Popis: Obsahuje produkty z objednávek určených pro trénování modelu.
     }
 
 ## Orders
-    HSET order:{<order_id>} {
+    HSET order:{<order_id>}:info {
         user_id,
-        eval_set,
         order_number,
         order_dow,
         order_hour_of_day,
-        days_since__order
+        days_since_prior_order
     }
-
-    SADD user:orders:<user_id> order_id
-
-    SADD orders:evalset:<eval_set> order_id
-
-    SADD orders:day:<order_dow> order_id
-
-    ZADD user:order_count 1 user_id
+    # Seznam všech objednávek pro konkrétního uživatele
+    SADD user:{<user_id>}:orders <order_id>
+    # Všechny objednávky seskupené podle dne v týdnu
+    SADD orders:day:<order_dow> <order_id>
+    # Počet objednávek na uživatele (sorted set), uživatel vkládá s +1 při nové objednávce
+    ZINCRBY user:order_count 1 <user_id>
 
 ## Order-products
-    ZADD order:products:{<order_id>} add_idx product_id
+    # Pro každý řádek (order_id, product_id, add_to_cart_order, reordered) vložíme:
+    #   - ZSET, kde klíč obsahuje hashtag {order_id}, aby veškeré operace nad jedním order_id byly ve stejném slotu
+    ZADD order:{<order_id>}:products <add_to_cart_order> <product_id>
 
-    ZADD product:popularity 1 product_id
+    # Produktu navíc navyšujeme statistiky:
+    #   • ZINCRBY product:{<product_id>}:popularity (celkové prodeje)
+    #   • Pokud reordered == 1, ZINCRBY product:{<product_id>}:reorder_count (opakováné objednávky)
+    ZINCRBY product:{<product_id>}:popularity 1 <product_id>
+    # pokud reordered == 1:
+    ZINCRBY product:{<product_id>}:reorder_count 1 <product_id>
 
-    ZADD product:reorder_count 1 product_id
-
-    HSET product:stats:<product_id> {
-        total_count,
-        reordered_count
-    }
+    # A navíc uložíme souhrn do hash:
+    HINCRBY product:{<product_id>}:stats total_count 1
+    # pokud reordered == 1:
+    HINCRBY product:{<product_id>}:stats reordered_count 1
