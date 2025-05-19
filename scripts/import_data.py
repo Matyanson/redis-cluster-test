@@ -182,7 +182,7 @@ def import_orders():
 
         # Sorted Set celkového počtu objednávek uživatelů 
         # ZINCRBY {agg}:users:order_count      1   <user_id>
-        r.zincrby("{{agg}}:users:order_count", 1, user_id)
+        r.zincrby("{agg}:users:order_count", 1, user_id)
 
     print("✅ Orders naimportovány.")
 
@@ -217,11 +217,11 @@ def import_order_products():
         if(reordered == 1):
             # Globální počet přeobjednání
             # ZINCRBY {agg}:products:reorder_count       1    <product_id> (reordered=1)
-            r.zincrby("{{agg}}:products:reorder_count", 1, product_id)
+            r.zincrby("{agg}:products:reorder_count", 1, product_id)
 
         # Globální frekvence (kolikrát se produkt objevil v jakékoli objednávce)
         # ZINCRBY {agg}:products:frequency    1   <product_id>
-        r.zincrby("{{agg}}:products:frequency", 1, product_id)
+        r.zincrby("{agg}:products:frequency", 1, product_id)
 
     print("✅ Prior order_products naimportováno.")
 
