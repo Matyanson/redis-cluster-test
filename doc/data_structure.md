@@ -102,57 +102,133 @@ Popis: Obsahuje produkty z objednávek určených pro trénování modelu.
 # Redis db
 
 ## Products
-    HSET product:{<product_id>}:info {
-        product_name,
-        aisle_id,
-        department_id
-    }
-    # Statistiky (počet prodejů a počty opakovaných objednávek) – ve stejném hashtagu {product_id}
-    HSET product:{<product_id>}:stats {
-        total_count,
-        reordered_count
-    }
-    # Populárnost produktu (celkové prodeje, používáme ZINCRBY)
-    ZINCRBY product:{<product_id>}:popularity 1 <product_id>
+    # Detail jednoho produktu
+    HSET   product:{<product_id>}:hash
+           "name"        <product_name>
+           "aisle_id"    <aisle_id>
+           "department_id"     <department_id>
+
+    # Všechny ID produktů v jedné uličce
+    SADD   products:by_aisle:{<aisle_id>}      <product_id>
+
+    # Všechny ID produktů v jednom oddělení
+    SADD   products:by_department:{<department_id>}  <product_id>
+
 
 ## Aisles
-    HSET aisle:<aisle_id> {
-        aisle
-    }
+    # Detail jedné uličky
+    HSET   aisle:{<aisle_id>}:hash
+           "name"        <aisle>
+    # Klíč `aisle:{id}:hash` ve slotu podle `{<aisle_id>}`.
 
 ## Departments
-    HSET department:<department_id> {
-        department
-    }
+    # Detail jednoho oddělení
+    HSET   department:{<department_id>}:hash
+           "name"        <department>
+    # Klíč `department:{id}:hash` ve slotu podle `{<department_id>}`.
 
 ## Orders
-    HSET order:{<order_id>}:info {
-        user_id,
-        order_number,
-        order_dow,
-        order_hour_of_day,
-        days_since_prior_order
-    }
-    # Seznam všech objednávek pro konkrétního uživatele
-    SADD user:{<user_id>}:orders <order_id>
-    # Všechny objednávky seskupené podle dne v týdnu
-    SADD orders:day:<order_dow> <order_id>
-    # Počet objednávek na uživatele (sorted set), uživatel vkládá s +1 při nové objednávce
-    ZINCRBY user:order_count 1 <user_id>
+    # Detail jedné objednávky
+    HSET   order:{<order_id>}:hash
+           "user_id"                 <user_id>
+           "order_number"            <order_number>
+           "order_dow"               <order_dow>
+           "order_hour_of_day"       <order_hour_of_day>
+           "days_since_prior_order"  <days_since_prior_order>
+    # Klíč `order:{id}:hash` leží ve slotu `{<order_id>}`.
 
-## Order-products
-    # Pro každý řádek (order_id, product_id, add_to_cart_order, reordered) vložíme:
-    #   - ZSET, kde klíč obsahuje hashtag {order_id}, aby veškeré operace nad jedním order_id byly ve stejném slotu
-    ZADD order:{<order_id>}:products <add_to_cart_order> <product_id>
+    # Set všech objednávek podle dne v týdnu (0–6)
+    SADD   orders:by_day:{<order_dow>}    <order_id>
 
-    # Produktu navíc navyšujeme statistiky:
-    #   • ZINCRBY product:{<product_id>}:popularity (celkové prodeje)
-    #   • Pokud reordered == 1, ZINCRBY product:{<product_id>}:reorder_count (opakováné objednávky)
-    ZINCRBY product:{<product_id>}:popularity 1 <product_id>
-    # pokud reordered == 1:
-    ZINCRBY product:{<product_id>}:reorder_count 1 <product_id>
+    # Set všech objednávek, které uživatel kdy udělal
+    SADD   user:{<user_id>}:orders        <order_id>
 
-    # A navíc uložíme souhrn do hash:
-    HINCRBY product:{<product_id>}:stats total_count 1
-    # pokud reordered == 1:
-    HINCRBY product:{<product_id>}:stats reordered_count 1
+    # Sorted Set celkového počtu objednávek uživatelů 
+    ZINCRBY {agg}:users:order_count      1   <user_id>
+
+## Order‑Products
+    # Sorted Set všech produktů v konkrétní objednávce
+    ZADD order:{<order_id>}:products   <cart_order> <product_id>
+
+    # Set všech unikátních produktů, které uživatel koupil
+    SADD user:{<user_id>}:products      <product_id>
+
+    Pokud `reordered=1`:
+        # Set přeobjednaných produktů od uživatele
+        SADD user:{<user_id>}:reordered_products   <product_id>
+
+    # Globální frekvence (kolikrát se produkt objevil v jakékoli objednávce)
+    ZINCRBY {agg}:products:frequency    1   <product_id>
+    
+    # Globální počet přeobjednání
+    ZINCRBY {agg}:products:reorder_count   1   <product_id>
+
+## Globální agregace
+    # Top N produktů dle frekvence
+    ZREVRANGE {agg}:products:frequency 0 9 WITHSCORES
+
+    # Top N produktů dle počtu přeobjednání
+    ZREVRANGE {agg}:products:reorder_count 0 9 WITHSCORES
+
+    # Průměrná cena produktu v každé uličce:
+    -- LUA na klíčích `KEYS = {'{agg}:aisles:*:price_sum', '{agg}:aisles:*:count'}`
+    -- spočítá `avg_price = price_sum/count`
+
+    # Počet objednávek každého uživatele
+    ZREVRANGE {agg}:users:order_count 0 -1 WITHSCORES
+
+    # Počet unikátních přeobjednaných produktů na uživatele
+    ZREVRANGE {agg}:users:distinct_reorders 0 -1 WITHSCORES
+
+## Klíčové hashtagy (pro Redis Cluster sloty)
+- `{<product_id>}` → všechny klíče `product:{<product_id>}:hash`
+- `{<aisle_id>}` → `aisle:{<aisle_id>}:hash` a rejstřík `products:by_aisle:{<aisle_id>}`
+- `{<department_id>}` → `department:{<department_id>}:hash` a rejstřík `products:by_department:{<department_id>}`
+- `{<user_id>}` → všechny klíče `user:{<user_id>}:*`
+- `{<order_id>}` → všechny klíče `order:{<order_id>}:*`
+- `{<order_dow>}` → klíč `orders:by_day:{<order_dow>}`
+- `{agg}` → všechny globální agregace (`products:frequency`, `products:reorder_count`, `users:order_count`, `users:distinct_reorders`, `aisles:{…}:price_sum`, `aisles:{…}:count`)
+
+---
+
+### 🚀 Vysvětlení a výhody tohoto návrhu
+
+1. **Singular vs. Plural**  
+   - Jednotlivé objekty:  
+     - `product:{id}:hash` – singular, protože odkazuje na přesně jeden produkt.  
+     - `order:{id}:hash` – singular, jeden záznam o objednávce.  
+     - `aisle:{id}:hash`, `department:{id}:hash`, `user:{id}:hash` – každý singular.  
+   - Kolekce (Sets / ZSets) používají plurál:  
+     - `products:by_aisle:{aisle_id}`, `products:by_department:{dept_id}`,  
+     - `user:{user_id}:orders`, `user:{user_id}:products`, `order:{order_id}:products`,  
+     - Globální ZSets: `{agg}:products:frequency`, `{agg}:users:order_count`, atd.
+
+2. **Sloučení „prior“ a „train“**  
+   - Při importu `order_products__prior.csv` i `order_products__train.csv` stavíme stejnou strukturu:  
+     - `order:{order_id}:products`,  
+     - globální agregace `{agg}:products:frequency`  
+   - Odpadá potřeba `orders:by_eval:*` i duplikace ZSetů.
+
+3. **Máme pouze jeden slot pro globální agregace**  
+   - Všechny klíče začínající `{agg}:…` leží ve stejném slotu, takže LUA skript nad nimi nikdy nepadne na `CROSSSLOT`.  
+
+4. **Entitní hashtagy (uživatel, objednávka, produkt) umožňují per‑entity operace v jednom Lua/MULTI**  
+   - Např. „vlož objednávku #123456 + položky + přidej do `user:{uid}:orders`“ ale protože `orders:{123456}` a `user:{uid}` mají ODLIŠNÉ hashtagy, musíme:  
+     1. nejprve spustit Lua nad `order:{123456}:*` (slot `{123456}`) pro vložení detailů a položek,  
+     2. pak (ve druhém kroku) spustit Lua nad `user:{uid}:orders` (slot `{uid}`) pro přidání do Setu.  
+
+5. **Indexy pro dotazy**  
+   - „Unwind + Group + Sort“ → většina agregací typu „Top N produktů“ aj. čte přímo jediné ZSety `{agg}:*`.  
+   - „Které produkty koupil uživatel X?“ → čteme `user:{X}:products` (slot `{X}`), pak můžeme i `HGETALL product:{pid}:hash` pro každý `pid`.  
+   - „Kolik produktů bylo v objednávce Y?“ → `SCARD order:{Y}:products`.  
+   - „Pro každé oddělení průměrná velikost košíku“ → LUA čte `{agg}:aisles:{…}:price_sum` + `{agg}:aisles:{…}:count`, spočítá průměry.  
+
+6. **Minimální CROSSSLOT**  
+   - Pouze při operacích, kde jednoznačně potřebuji “vložit objednávku i do uživatele” v jednom kroku.  
+   - V ostatních případech se transakce rozdělí na dva Lua bloky (per slot).  
+
+Tímto způsobem máme:
+- **Čisté, jednoznačné klíče** (singular/plural, jasné hashtagy),
+- **Efektivní shardování** nad 3 mastery,
+- **Jednoduché globální agregace** (slot `{agg}`),
+- **Možnost psát netriviální dotazy** formou Lua (bez CROSSSLOT) nebo per‑shard map/reduce.
