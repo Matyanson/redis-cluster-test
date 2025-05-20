@@ -135,7 +135,6 @@ Popis: Obsahuje produkty z objednávek určených pro trénování modelu.
            "order_dow"               <order_dow>
            "order_hour_of_day"       <order_hour_of_day>
            "days_since_prior_order"  <days_since_prior_order>
-    # Klíč `order:{id}:hash` leží ve slotu `{<order_id>}`.
 
     # Set všech objednávek podle dne v týdnu (0–6)
     SADD   orders:by_day:{<order_dow>}    <order_id>
@@ -170,10 +169,6 @@ Popis: Obsahuje produkty z objednávek určených pro trénování modelu.
     # Top N produktů dle počtu přeobjednání
     ZREVRANGE {agg}:products:reorder_count 0 9 WITHSCORES
 
-    # Průměrná cena produktu v každé uličce:
-    -- LUA na klíčích `KEYS = {'{agg}:aisles:*:price_sum', '{agg}:aisles:*:count'}`
-    -- spočítá `avg_price = price_sum/count`
-
     # Počet objednávek každého uživatele
     ZREVRANGE {agg}:users:order_count 0 -1 WITHSCORES
 
@@ -187,7 +182,7 @@ Popis: Obsahuje produkty z objednávek určených pro trénování modelu.
 - `{<user_id>}` → všechny klíče `user:{<user_id>}:*`
 - `{<order_id>}` → všechny klíče `order:{<order_id>}:*`
 - `{<order_dow>}` → klíč `orders:by_day:{<order_dow>}`
-- `{agg}` → všechny globální agregace (`products:frequency`, `products:reorder_count`, `users:order_count`, `users:distinct_reorders`, `aisles:{…}:price_sum`, `aisles:{…}:count`)
+- `{agg}` → všechny globální agregace (`products:frequency`, `products:reorder_count`, `users:order_count`, `users:distinct_reorders`)
 
 ---
 
@@ -220,8 +215,7 @@ Popis: Obsahuje produkty z objednávek určených pro trénování modelu.
 5. **Indexy pro dotazy**  
    - „Unwind + Group + Sort“ → většina agregací typu „Top N produktů“ aj. čte přímo jediné ZSety `{agg}:*`.  
    - „Které produkty koupil uživatel X?“ → čteme `user:{X}:products` (slot `{X}`), pak můžeme i `HGETALL product:{pid}:hash` pro každý `pid`.  
-   - „Kolik produktů bylo v objednávce Y?“ → `SCARD order:{Y}:products`.  
-   - „Pro každé oddělení průměrná velikost košíku“ → LUA čte `{agg}:aisles:{…}:price_sum` + `{agg}:aisles:{…}:count`, spočítá průměry.  
+   - „Kolik produktů bylo v objednávce Y?“ → `SCARD order:{Y}:products`. 
 
 6. **Minimální CROSSSLOT**  
    - Pouze při operacích, kde jednoznačně potřebuji “vložit objednávku i do uživatele” v jednom kroku.  
