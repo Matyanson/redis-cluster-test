@@ -1,3 +1,10 @@
+1. Vytváření a úpravy dat - 6
+2. Mazání a čištění dat - 6
+3. Získávání a prohlížení dat - 6
+4. Agregační a analytické dotazy - 6
+5. Transakce a hromadné/batch operace - 6
+
+
 # Vytváření a úpravy dat (Insert/Update)
 
 ## 1.1 Vložit nový produkt do uličky a vrátit detail hash
@@ -259,11 +266,11 @@
 
 ## 3.3 Vrátit detail oddělení + seznam všech produktů v něm
 
-EVAL "
-  local detail = redis.call('HGETALL', KEYS[1])
-  local prods  = redis.call('SMEMBERS',  KEYS[2])
-  return {detail, prods}
-  " 2 department:{4}:hash products:by_department:{4}
+    EVAL "
+      local detail = redis.call('HGETALL', KEYS[1])
+      local prods  = redis.call('SMEMBERS',  KEYS[2])
+      return {detail, prods}
+      " 2 department:{4}:hash products:by_department:{4}
 
 - Obecné chování:
 

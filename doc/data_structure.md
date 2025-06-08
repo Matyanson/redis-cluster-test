@@ -74,26 +74,38 @@ Popis: Obsahuje produkty z objednávek určených pro trénování modelu.
 
 # Original dataset
 ## Orders
+(3_500_000 řádků)
+
     order_id,user_id,eval_set,order_number,order_dow,order_hour_of_day,days_since__order
     sorted_by: user_id, order_number
 
 ## Order products train (poslední objednávka)
+(1_400_000 řádků)
+
     order_id,product_id,add_to_cart_order,reordered
     sorted_by: order_id, add_to_cart_order
 
 ## Order products  (všechny ostatní objednávky)
+(32_500_000 řádků)
+
     order_id,product_id,add_to_cart_order,reordered
     sorted_by: order_id, add_to_cart_order
 
 ## Products
+(50_000 řádků)
+
     product_id,product_name,aisle_id,department_id
     sorted_by: product_id
 
 ## Ailes
+(135 řádků)
+
     aisle_id,aisle
     sorted_by: aisle_id
 
 ## Departments
+(22 řádků)
+
     department_id,department
     sorted_by: department_id
 
