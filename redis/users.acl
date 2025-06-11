@@ -1,3 +1,5 @@
+user default off
+
 user admin on >adminpassword ~* +@all
 
 user ingestor on >ingestorpassword +@write +@read ~orders:* ~order_products:* nopass
