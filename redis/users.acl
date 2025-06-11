@@ -2,6 +2,8 @@ user default off
 
 user admin on >adminpassword ~* +@all
 
+user replica on >replicapassword +psync +replconf +ping
+
 user ingestor on >ingestorpassword +@write +@read ~orders:* ~order_products:* nopass
 
 user catalog_reader on >catalogpass +@read -@write ~products:* ~departments:* ~aisles:* nopass
